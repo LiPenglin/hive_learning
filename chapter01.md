@@ -38,7 +38,7 @@
     - 解压
     - /etc/profile
     - conf/hive-env.sh
-        ```shell
+        ```sh
         export HADOOP_HOME=/data/hadoop-2.6.5
         ```
     - conf/hive.xml
@@ -73,7 +73,7 @@
         - [download](https://dev.mysql.com/downloads/connector/j/5.1.html)
         - `cp jarfile $HIVE_HOME/lib`
     - Attention
-        ```shell
+        ```sh
         [ERROR] Terminal initialization failed; falling back to unsupported
         mv  $HADOOP_HOME/share/hadoop/yarn/lib/jline*.jar
         cp $HIVE_HOME/lib/jline*.jar $HADOOP_HOME/share/hadoop/yarn/lib/
@@ -101,11 +101,11 @@
     6,f6
     ```
     - 上传
-    ```shell
+    ```sh
     hdfs dfs -put films.tb /user/hive/warehouse/ilive.db/films
     ```
     - 验证
-    ```shell
+    ```sql
     hive> select * from films;
     OK
     1       f1
@@ -116,7 +116,7 @@
     6       f6
     ```
     - 其他方式
-    ```shell
+    ```sql
     load data [local] inpath file_path into table table_name;
     ```
 3. external 外部表
@@ -164,7 +164,6 @@
     +--------+-------------+-------+------------------+-------+-----------+-------+----------+----------------+--------------------+--------------------+
     ```
 5. 分区表
-
     ```sql
     create table music(id int, name string)
     partitioned by(artist string)
@@ -185,3 +184,149 @@
     ```
 6. STORED AS 
 > SEQUENCEFILE|TEXTFILE|RCFILE
+
+7. ddl -> alter table -> 修改表
+    ```sql
+    create table art(id int, name string)
+    partitioned by(artist string)
+    row format delimited
+    fields terminated by ',';
+    load data local inpath '/home/lpl/hive_data/art_01.dat' into table art partition(artist="a1");
+    load data local inpath '/home/lpl/hive_data/art_02.dat' into table art partition(artist="a2");
+    /user/hive/warehouse/ilive.db/art/artist=a1/art_01.dat
+    /user/hive/warehouse/ilive.db/art/artist=a2/art_02.dat
+    hive> show partitions art;
+    OK
+    artist=a1
+    artist=a2
+
+    alter table art drop partition(artist='a2');
+    hive> show partitions art;
+    OK
+    artist=a1
+    同时 /user/hive/warehouse/ilive.db/art/artist=a2/art_02.dat 也被删掉
+
+    hive> alter table art add partition(artist='a3') partition(artist='a4');
+    OK
+    hive> show partitions art;
+    OK
+    artist=a1
+    artist=a3
+    artist=a4
+    /user/hive/warehouse/ilive.db/art/artist=a3
+    /user/hive/warehouse/ilive.db/art/artist=a4
+
+    hive> alter table art rename to art_new;
+    OK
+    hive> show tables;
+    OK
+    art_new
+    films
+    music
+    novels
+
+    alter table art add columns(country string);
+    hive> desc art;
+    OK
+    id                      int
+    name                    string
+    country                 string
+    artist                  string
+    # Partition Information
+    # col_name              data_type               comment
+    artist                  string
+    hive> select * from art;
+    OK
+    1       中文 希崎ジェシカ 人妻寝取願望単体作品  NULL    a1
+    2       內射白天午休的護士們    NULL    a1
+    3       人妻花園劇場 1周年記念ス        NULL    a1
+    4       「在我出差時…」出軌通姦 懷有惡意的妻子前男友所拍下的妻子        NULL    a1
+    5       園田みおん作品259LUXU 685       NULL    a1
+    6       快感風俗フルコース 松下紗栄子   NULL    a1
+
+    ADD是代表新增一字段，字段位置在所有列后面，partition列前，REPLACE则是表示替换表中所有字段
+
+    hive> alter table art change name art_name string first;
+    OK
+    hive> desc art;
+    OK
+    art_name                string
+    id                      int
+    country                 string
+    artist                  string
+    ```
+8. 显示命令
+    ```sql
+    hive> show databases;
+    OK
+    default
+    ilive
+    hive> show tables;
+    OK
+    art
+    films
+    music
+    novels
+    hive> show partitions art;
+    OK
+    artist=a1
+    artist=a3
+    artist=a4
+    hive> show functions;
+    ...
+    hive> desc formatted art;
+    OK
+    # col_name              data_type               comment
+
+    type                    string
+    art_name                string
+    id                      int
+
+    # Partition Information
+    # col_name              data_type               comment
+
+    artist                  string
+
+    # Detailed Table Information
+    Database:               ilive
+    Owner:                  lpl
+    CreateTime:             Sat Jan 05 22:39:04 CST 2019
+    LastAccessTime:         UNKNOWN
+    Protect Mode:           None
+    Retention:              0
+    Location:               hdfs://master:8020/user/hive/warehouse/ilive.db/art
+    Table Type:             MANAGED_TABLE
+    Table Parameters:
+            last_modified_by        lpl
+            last_modified_time      1546703197
+            transient_lastDdlTime   1546703197
+
+    # Storage Information
+    SerDe Library:          org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe
+    InputFormat:            org.apache.hadoop.mapred.TextInputFormat
+    OutputFormat:           org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
+    Compressed:             No
+    Num Buckets:            -1
+    Bucket Columns:         []
+    Sort Columns:           []
+    Storage Desc Params:
+            field.delim             ,
+            serialization.format    ,
+    ```
+    ```sh
+    hive> dfs -cat /user/hive/warehouse/ilive.db/art/artist=a1/art_01.dat;
+    1,中文 希崎ジェシカ 人妻寝取願望単体作品
+    2,內射白天午休的護士們
+    3,人妻花園劇場 1周年記念ス
+    4,「在我出差時…」出軌通姦 懷有惡意的妻子前男友所拍下的妻子
+    5,園田みおん作品259LUXU 685,20歳的AV女優！
+    6,快感風俗フルコース 松下紗栄子
+
+    hive> !cat /home/lpl/hive_data/art_02.dat;
+    1,僕のねとられ話しを聞いてほしい
+    2,まんチラの誘惑 熟成された女のカラダ
+    3,M痴女 上山奈々
+    4,市川里美 遭催眠光线控制气象女主播
+    5,真白杏 六本木俱乐部真实中出乱交猛
+    6,向部屋人妻 神宮寺奈緒
+    ```
