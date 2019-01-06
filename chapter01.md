@@ -184,6 +184,7 @@
     ```
 6. STORED AS 
 > SEQUENCEFILE|TEXTFILE|RCFILE
+<<<<<<< HEAD
 
 7. ddl -> alter table -> 修改表
     ```sql
