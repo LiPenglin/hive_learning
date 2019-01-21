@@ -32,7 +32,7 @@
         - create
         - alter
         - drop
-    -dcl 
+    - dcl 
         - grant
 - hive1.0
     - 解压
@@ -184,8 +184,6 @@
     ```
 6. STORED AS 
 > SEQUENCEFILE|TEXTFILE|RCFILE
-<<<<<<< HEAD
-
 7. ddl -> alter table -> 修改表
     ```sql
     create table art(id int, name string)
@@ -331,3 +329,37 @@
     5,真白杏 六本木俱乐部真实中出乱交猛
     6,向部屋人妻 神宮寺奈緒
     ```
+9. 导入数据
+    - 本地
+    ```sql
+    load data local inpath 'path' into table t_name partition(column='c_value');
+    ... overwrite into  ...
+    ```
+    - HDFS
+    ```sql
+    load data inpath 'hdfs_path' into table t_name partition(column='c_value');
+    ```
+    - 其他表
+    ```sql
+    create table t_name like exit_table; -- 空表
+
+    set hive.exec.dynamic.partition.mode=nonstrict;
+    insert into table t_name partition (p_name) select ... from ...;
+
+    insert into table t_name partition (p_name=p_value) select ... from ...;
+
+    create table t_name as select ... from ...;
+    ```
+10. 导出数据
+    ```sql
+    insert overwrite [local] directory 'hdfs_path' select ... from ...;
+
+    ```
+11. 查询
+    1. > group by
+    2. > distribute by -> 对map task 的output 分区
+    3. > sort by -> 对map taks 的input 排序 -> asc | desc
+    4. > cluster by -> 2+3 -> reduce task 内有序 -> 无法指定规则
+12. 去重
+    1. > ROW_NUMBER() OVER(PARTITION BY COLUMN1 ORDER BY COLUMN2)
+    2. > SELECT DISTINCT 列名称 FROM 表名称
